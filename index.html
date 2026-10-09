@@ -751,7 +751,7 @@ const SETTINGS = {
   // claimed: how many of the headcount are already booked. Update this by hand as bookings come in, then republish -- there's no live counter behind it.
   // endsOn: real last day of the promo. It ends on that date or when claimed reaches headcount, whichever comes first, and hides itself either way.
   // claimed is only a fallback now: on the live site the real count comes from Square via /count.json, refreshed every 30 minutes by the GitHub deploy job.
-  launchPromo: { active: true, headcount: 20, claimed: 0, endsOn: "2026-10-31", countUrl: "/count.json" },
+  launchPromo: { active: true, headcount: 20, claimed: 0, endsOn: "2026-10-31", countUrl: "/count.json", showCountAt: 5 },
   // Monthly deadline bonus slot, currently OFF (deep conditioning dropped Oct 5: costs chair time once she's full). To use: set a bonus name, its real menu value, a real endsOn date, and active:true. Hides itself after endsOn.
   deadlineBonus: { active: false, name: "", value: 0, endsOn: "" },
   // Starting prices for the menu, e.g. "$150 & up". Leave "" to show "Priced at consultation".
@@ -824,10 +824,18 @@ function renderLaunchPromo(claimed) {
     return;
   }
   const by = end ? ` through ${end.toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : "";
-  document.getElementById("launchPromo").textContent = `Just opened in Melbourne. Free haircut with your first color visit${by}, or until the first ${n} clients, whichever comes first. ${left} spots left.`;
-  document.getElementById("launchPromoSmall").textContent = `Plus a free haircut with your color${by}. ${left} spots left.`;
-  document.getElementById("mobileBarText").innerHTML = `<strong>Whole New You Color Visit</strong>Free haircut${by}, ${left} spots left`;
-  document.getElementById("heroLaunchPromo").textContent = `Launch special: free haircut ($55 value) with your first color visit${by}. ${left} of ${n} spots left`;
+  // Show the countdown only once enough spots are claimed for it to read as demand.
+  if (claimed >= (p.showCountAt || 0)) {
+    document.getElementById("launchPromo").textContent = `Just opened in Melbourne. Free haircut with your first color visit${by}, or until the first ${n} clients, whichever comes first. ${left} spots left.`;
+    document.getElementById("launchPromoSmall").textContent = `Plus a free haircut with your color${by}. ${left} spots left.`;
+    document.getElementById("mobileBarText").innerHTML = `<strong>Whole New You Color Visit</strong>Free haircut${by}, ${left} spots left`;
+    document.getElementById("heroLaunchPromo").textContent = `Launch special: free haircut ($55 value) with your first color visit${by}. ${left} of ${n} spots left`;
+  } else {
+    document.getElementById("launchPromo").textContent = `Just opened in Melbourne. Free haircut with your first color visit for the first ${n} new clients${by}.`;
+    document.getElementById("launchPromoSmall").textContent = `Plus a free haircut with your color for the first ${n} new clients${by}.`;
+    document.getElementById("mobileBarText").innerHTML = `<strong>Whole New You Color Visit</strong>Free haircut, first ${n} new clients`;
+    document.getElementById("heroLaunchPromo").textContent = `Launch special: free haircut ($55 value) for the first ${n} new clients${by}.`;
+  }
   ids.forEach(id => { document.getElementById(id).hidden = false; });
 }
 if (SETTINGS.launchPromo && SETTINGS.launchPromo.active) {
