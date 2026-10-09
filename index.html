@@ -411,9 +411,6 @@ src="https://www.facebook.com/tr?id=2106667673542937&ev=PageView&noscript=1"
   </div>
 </header>
 
-<form name="shade-leads" data-netlify="true" netlify-honeypot="company" hidden>
-  <input name="first_name"><input name="phone"><input name="shade"><input name="sms_consent"><input name="company">
-</form>
 
 <main id="top">
   <!-- HERO -->
@@ -724,7 +721,7 @@ src="https://www.facebook.com/tr?id=2106667673542937&ev=PageView&noscript=1"
   <div class="container footer-inner">
     <span>Nora Scotto, Melbourne highlight &amp; color specialist</span>
     <span>At Euphoria Day Spa &amp; Salon, Melbourne, FL</span>
-    <p class="footer-privacy">Privacy: this site uses cookies from Meta (Facebook) to measure our ads and show them to people who may be interested, and Microsoft Clarity to see how visitors use the site so we can improve it. If you share your name and number in the shade quiz, it's used only to contact you about your hair and is never sold.</p>
+    <p class="footer-privacy">Privacy: this site uses cookies from Meta (Facebook) to measure our ads and show them to people who may be interested, and Microsoft Clarity to see how visitors use the site so we can improve it.</p>
   </div>
 </footer>
 
@@ -753,7 +750,7 @@ const SETTINGS = {
   // Set active:false the moment the headcount is claimed -- track the running count in Square notes or the Life tracker, not here.
   // claimed: how many of the headcount are already booked. Update this by hand as bookings come in, then republish -- there's no live counter behind it.
   // endsOn: real last day of the promo. It ends on that date or when claimed reaches headcount, whichever comes first, and hides itself either way.
-  // claimed is only a fallback now: on the live site the real count comes from Square via /.netlify/functions/launch-count.
+  // claimed is only a fallback now: on the live site the real count comes from Square via /count.json, refreshed every 30 minutes by the GitHub deploy job.
   launchPromo: { active: true, headcount: 20, claimed: 0, endsOn: "2026-10-31", countUrl: "/count.json" },
   // Monthly deadline bonus slot, currently OFF (deep conditioning dropped Oct 5: costs chair time once she's full). To use: set a bonus name, its real menu value, a real endsOn date, and active:true. Hides itself after endsOn.
   deadlineBonus: { active: false, name: "", value: 0, endsOn: "" },
@@ -1024,43 +1021,18 @@ function renderResult() {
        <a class="btn btn-primary js-book-result" href="#">Book your Whole New You Color Visit</a>
        <button class="quiz-back" style="margin:0">Start over</button>
      </div>
-     <form class="lead-form" id="leadForm" novalidate>
+     <div class="lead-form">
        <h4>Not ready to book yet?</h4>
-       <p>Get your shade match by text, so it's there when you're ready.</p>
-       <div class="lead-row">
-         <input name="first_name" autocomplete="given-name" placeholder="First name" required aria-label="First name">
-         <input name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="Mobile number" required aria-label="Mobile number">
-         <button class="btn btn-primary" type="submit">Text me my shade match</button>
-       </div>
-       <input name="company" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
-       <label class="consent"><input type="checkbox" name="sms_consent" required> <span>I agree to receive texts from Nora Scotto about my shade match, appointments and offers. Consent isn't required to book. Msg and data rates may apply. Reply STOP to opt out.</span></label>
-       <div class="form-msg" id="formMsg" role="status"></div>
-     </form>`;
-  wireLeadForm(r.name);
+       <p>Text Nora your shade match and she'll reply personally with any questions you have.</p>
+       <a class="btn btn-primary js-text js-text-shade" href="#">Text Nora my shade</a>
+     </div>`;
+  const t = quizEl.querySelector(".js-text-shade");
+  if (SETTINGS.textNumber) t.href = "sms:+1" + SETTINGS.textNumber + "?&body=" + encodeURIComponent("Hi Nora! My shade quiz match was " + r.name + ". I'd love to talk about it.");
+  else t.closest(".lead-form").hidden = true;
   const b = quizEl.querySelector(".js-book-result");
   if (SETTINGS.bookingUrl) { b.href = SETTINGS.bookingUrl; b.target = "_blank"; b.rel = "noopener"; }
   else b.addEventListener("click", e => { e.preventDefault(); showToast("Online booking opens soon. Check back shortly to reserve your spot."); });
   quizEl.querySelector(".quiz-back").addEventListener("click", () => { answers = []; renderQuestion(0); });
-}
-function wireLeadForm(shade) {
-  const f = document.getElementById("leadForm"), msg = document.getElementById("formMsg");
-  f.addEventListener("submit", async e => {
-    e.preventDefault();
-    const name = f.first_name.value.trim(), phone = f.phone.value.replace(/\D/g, "");
-    if (!name) { msg.textContent = "Add your first name."; return; }
-    if (phone.length < 10) { msg.textContent = "Enter a 10-digit mobile number."; return; }
-    if (!f.sms_consent.checked) { msg.textContent = "Check the box to agree to texts, or book online instead."; return; }
-    const body = new URLSearchParams({ "form-name": "shade-leads", first_name: name, phone, shade, sms_consent: "yes", company: f.company.value });
-    const btn = f.querySelector("button"); btn.disabled = true; msg.textContent = "Sending...";
-    try {
-      const res = await fetch("/", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: body.toString() });
-      if (!res.ok) throw new Error(res.status);
-      f.innerHTML = '<h4>You\'re all set, ' + name.replace(/[<>&"]/g, "") + '.</h4><p>Nora will text your shade match shortly.</p>';
-    } catch (err) {
-      btn.disabled = false;
-      msg.textContent = "That didn't go through. Text Nora directly at 443-521-0660 and mention your shade.";
-    }
-  });
 }
 renderQuestion(0);
 </script>
