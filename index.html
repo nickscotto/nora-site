@@ -1,4 +1,3 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,7 +7,8 @@
 <meta name="description" content="Hair colorist Nora Scotto at Euphoria Day Spa &amp; Salon in Melbourne, FL. Highlights, balayage, gray blending. New clients: color + haircut $100 through Oct 31.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Manrope:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Manrope:wght@400;500;600;700&display=swap"></noscript>
 <style>
   :root {
     --paper: #F6F6F3;
@@ -61,6 +61,7 @@
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
   }
+  [hidden]:not([hidden=until-found i]) { display: none !important; }
   img { max-width: 100%; display: block; }
   a { color: inherit; }
   :focus-visible { outline: 2px solid var(--honey); outline-offset: 3px; border-radius: 4px; }
@@ -419,10 +420,12 @@ src="https://www.facebook.com/tr?id=2106667673542937&ev=PageView&noscript=1"
 <!-- End Meta Pixel Code -->
 <!-- Microsoft Clarity -->
 <script type="text/javascript">
+    // Events queue immediately; the Clarity script itself loads after the page does.
     (function(c,l,a,r,i,t,y){
         c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        function load(){t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);}
+        if (l.readyState==="complete") setTimeout(load,1500); else c.addEventListener("load",function(){setTimeout(load,1500);});
     })(window, document, "clarity", "script", "yu7jktz1hq");
 </script>
 <meta property="og:type" content="website">
@@ -1043,7 +1046,7 @@ WORK.forEach(look => {
 
 /* Portrait */
 if (SETTINGS.portraitPhoto) {
-  document.getElementById("portrait").innerHTML = `<img src="${SETTINGS.portraitPhoto}" width="396" height="538" alt="Nora Scotto, hair colorist">`;
+  document.getElementById("portrait").innerHTML = `<img src="${SETTINGS.portraitPhoto}" width="396" height="538" loading="lazy" alt="Nora Scotto, hair colorist">`;
 }
 
 /* Reviews: only real ones */
@@ -1145,5 +1148,3 @@ renderQuestion(0);
 </script>
 </body>
 </html>
-
-</body></html>
