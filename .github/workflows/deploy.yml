@@ -30,7 +30,7 @@ jobs:
       - name: Assemble site
         run: |
           mkdir _site
-          cp -r index.html work CNAME .nojekyll _site/
+          cp -r index.html work CNAME .nojekyll robots.txt sitemap.xml _site/
       - name: Update launch-spot count
         env:
           SQUARE_TOKEN: ${{ secrets.SQUARE_TOKEN }}
