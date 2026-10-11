@@ -22,7 +22,7 @@ Edit `index.html`, commit, `git push`. GitHub Actions (`.github/workflows/deploy
 All-over or root color + haircut for $100 (normally $200 = $145 color + $55 cut), first 20 new clients. The $100 can go toward highlights ($155+), balayage ($190+) or gray blending ($175+); client pays the difference, cut included. Elements with `.promo-only` / `.regular-only` swap automatically when the promo ends (date passes or 20 claimed). The countdown shows only at 5+ claimed (`showCountAt`).
 
 ## Design notes
-- The claim form is styled as a printed salon appointment card (card stock #F1E3C4, brunette ink and button, inset 1px rule, 6px radius). It is the one bold element on the page; keep everything around it quiet. Same look in light and dark mode.
+- The claim form is styled as a printed salon appointment card (card stock #F1E3C4, brunette ink and button, inset 1px rule, 6px radius). It is the one bold element on the page; keep everything around it quiet. Top of the card: Nora's round photo (`work/nora-avatar.webp`, cropped from the award portrait) + "Your colorist: Nora Scotto / Founder of Europa, a 2x award-winning Maryland salon". On phones the Claim button must stay above the bottom bar (check at 364-390px). Same look in light and dark mode.
 - Avoid template tells: no arrows appended to link text, no middle-dot meta strings, no all-caps eyebrow labels.
 - Photos are WebP in `work/` (PNG originals kept). Give every `<img>` width/height.
 

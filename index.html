@@ -132,6 +132,10 @@
   /* The claim card reads as a printed salon appointment card: card stock, brunette ink, inset rule. Same in both themes. */
   .claim-card { position: relative; margin-top: 6px; max-width: 34em; background: #F1E3C4; color: #2B1D17; border-radius: 6px; padding: 26px 24px 20px; box-shadow: 0 1px 0 rgba(255,255,255,.5) inset, 0 20px 44px rgba(0,0,0,.28); }
   .claim-card::before { content: ""; position: absolute; inset: 7px; border: 1px solid rgba(74,47,34,.32); border-radius: 3px; pointer-events: none; }
+  .claim-who { display: flex; align-items: center; gap: 12px; margin: 0 0 14px; padding-bottom: 14px; border-bottom: 1px solid rgba(74,47,34,.22); }
+  .claim-who img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; flex: none; box-shadow: 0 0 0 2px #F1E3C4, 0 0 0 3px rgba(74,47,34,.35); }
+  .claim-who p { margin: 0; font-size: 0.86rem; line-height: 1.35; color: #6B5446; }
+  .claim-who strong { display: block; font-size: 0.95rem; color: #2B1D17; }
   .claim-title { font-family: var(--serif); font-weight: 400; font-size: 1.6rem; line-height: 1.15; margin: 0 0 4px; color: #2B1D17; }
   .claim-sub { margin: 0 0 14px; color: #6B5446; font-size: 0.95rem; }
   .claim-card .lead-row .btn { flex: 1 1 100%; }
@@ -160,7 +164,10 @@
     .hero-kicker { margin-bottom: 10px; font-size: 0.9rem; }
     .hero h1 { margin-bottom: 12px; }
     .hero-lede { font-size: 1rem; margin-bottom: 16px; }
-    .claim-card { padding: 20px 18px 16px; }
+    .claim-card { padding: 18px 18px 16px; }
+    .claim-who { gap: 10px; margin-bottom: 10px; padding-bottom: 10px; }
+    .claim-who img { width: 44px; height: 44px; }
+    .claim-who p { font-size: 0.8rem; }
     .claim-title { font-size: 1.3rem; }
     .claim-sub { margin-bottom: 10px; }
     .claim-card .lead-row input { padding: 11px 14px; }
@@ -466,10 +473,14 @@ src="https://www.facebook.com/tr?id=2106667673542937&ev=PageView&noscript=1"
       <div>
         <p class="hero-kicker">For women in Melbourne, Suntree &amp; Viera</p>
         <h1><span class="promo-only">All-over color + haircut for $100</span><span class="regular-only" hidden>Hair color you'll love, in Melbourne</span></h1>
-        <p class="hero-lede promo-only">Normally $200. First 20 new clients through Oct 31, with Nora Scotto at Euphoria Day Spa &amp; Salon in Suntree. Want highlights or balayage? Put the $100 toward them.</p>
+        <p class="hero-lede promo-only">Normally $200. First 20 new clients through Oct 31, at Euphoria Day Spa &amp; Salon in Suntree. Want highlights or balayage? Put the $100 toward them.</p>
         <p class="hero-lede regular-only" hidden>Highlights, balayage, gray blending and color correction by Nora Scotto at Euphoria Day Spa &amp; Salon in Suntree.</p>
         <p id="heroLaunchPromo" class="banner" hidden></p>
         <form class="claim-card promo-only" id="claimForm" novalidate>
+          <div class="claim-who">
+            <img src="work/nora-avatar.webp" width="56" height="56" alt="Nora Scotto">
+            <p><strong>Your colorist: Nora Scotto</strong><span>Founder of Europa, a 2x award-winning Maryland salon</span></p>
+          </div>
           <h2 class="claim-title">Claim your $100 spot</h2>
           <p class="claim-sub">No payment now. Nora will text you to pick a time.</p>
           <div class="lead-row">
