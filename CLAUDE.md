@@ -21,6 +21,14 @@ Edit `index.html`, commit, `git push`. GitHub Actions (`.github/workflows/deploy
 ## Current offer (through Oct 31, 2026)
 All-over or root color + haircut for $100 (normally $200 = $145 color + $55 cut), first 20 new clients. The $100 can go toward highlights ($155+), balayage ($190+) or gray blending ($175+); client pays the difference, cut included. Elements with `.promo-only` / `.regular-only` swap automatically when the promo ends (date passes or 20 claimed). The countdown shows only at 5+ claimed (`showCountAt`).
 
+## Design notes
+- The claim form is styled as a printed salon appointment card (card stock #F1E3C4, brunette ink and button, inset 1px rule, 6px radius). It is the one bold element on the page; keep everything around it quiet. Same look in light and dark mode.
+- Avoid template tells: no arrows appended to link text, no middle-dot meta strings, no all-caps eyebrow labels.
+- Photos are WebP in `work/` (PNG originals kept). Give every `<img>` width/height.
+
+## Audits
+mcp-seo CLI (pip, `mcp-seo lighthouse|performance|accessibility|mobile https://norascotto.com/`). Oct 11 after fixes: SEO 97/100, accessibility 100/100, LCP ~0.45s, CLS 0.006, page ~620KB. Remaining flags are acceptable: TBT ~230ms comes from the Meta Pixel + Clarity scripts; "small tap targets" are inline text links; no srcset needed for ~470px images.
+
 ## Page structure
 Hero (avatar line, offer H1, claim form: first name + mobile -> FormSubmit email to nick@claritypoint.io, then a step-2 booking link) -> credentials -> her work -> offer details -> reviews -> how the visit goes -> shade quiz -> services menu -> about -> FAQ -> visit -> final CTA. Mobile bar: Text + Claim.
 
