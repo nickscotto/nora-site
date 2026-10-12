@@ -822,6 +822,7 @@ src="https://www.facebook.com/tr?id=2106667673542937&ev=PageView&noscript=1"
    ============================================================ */
 const SETTINGS = {
   // Direct Square booking link for the Whole New You Color Visit
+  claimsSheetUrl: "https://script.google.com/macros/s/AKfycbx23P9UA6qu-AIpXxaDm28FaD9tWKe6EtuWz59thOpx65P6-vo17y25--YiCj9Of474aQ/exec", // Google Apps Script web app that logs each claim to the shared sheet (scripts/claims-sheet.gs)
   bookingUrl: "https://book.squareup.com/appointments/lby5fw3rk1hb4c/location/LMF0NR8GP2YVJ/services/IQ2MECENHKNEYIJTBPUENNJB",
   // Typical visit length shown on the offer, e.g. "about 2.5 to 3 hours". Leave "" to hide until Nora confirms.
   sessionLength: "about 2.5 to 3 hours",
@@ -974,6 +975,7 @@ if (SETTINGS.textNumber) {
     const btn = f.querySelector("button"); btn.disabled = true; msg.textContent = "Claiming your spot...";
     const pretty = `(${phone.slice(0, 3)}) ${phone.slice(3, 6)}-${phone.slice(6)}`;
     try {
+      if (SETTINGS.claimsSheetUrl) fetch(SETTINGS.claimsSheetUrl, { method: "POST", mode: "no-cors", keepalive: true, headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ first_name: name, phone, _honey: f.company.value }) }).catch(() => {});
       const res = await fetch("https://formsubmit.co/ajax/nick@claritypoint.io", {
         method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({ _subject: "New $100 claim: " + name + " " + pretty, _template: "table", _captcha: "false", _honey: f.company.value, first_name: name, phone: pretty, offer: "$100 all-over color + haircut", text_them: "sms:+1" + phone })
