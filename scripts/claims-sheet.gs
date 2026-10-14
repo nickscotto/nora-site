@@ -3,7 +3,7 @@
  * The site POSTs each claim here (see the claim form handler in index.html);
  * this adds it as a new row at the top with an unchecked "Texted" box.
  * A phone number already in the sheet is not added twice; H1 shows the count of distinct people.
- * Every 15 minutes syncBookings() fills "Booked online" from Square for people who booked themselves
+ * Every 5 minutes syncBookings() fills "Booked online" from Square for people who booked themselves
  * (needs Script Property SQUARE_TOKEN; run setupBookingCheck() once to start it).
  *
  * Setup: Extensions > Apps Script, paste this file, run setup() once,
@@ -65,7 +65,9 @@ function doPost(e) {
     sh.getRange(2, 1, 1, 6).setValues([[
       isNaN(when) ? new Date() : when, name, pretty,
       '=HYPERLINK("sms:+1' + phone + '","Text")', false, note
-    ]]).setFontWeight("normal").setBackground(null).setFontColor(null);
+    ]]);
+    // The new row copies the header's style; reset it across every column, including "Booked online"
+    sh.getRange(2, 1, 1, HEADERS.length).setFontWeight("normal").setBackground(null).setFontColor(null);
     sh.getRange(2, 1).setNumberFormat("ddd m/d h:mm am/pm");
     sh.getRange(2, 5).insertCheckboxes();
   } finally {
@@ -95,13 +97,13 @@ function removeDuplicates() {
   drop.sort((a, b) => b - a).forEach(r => sh.deleteRow(r));
 }
 
-// Run once: adds the "Booked online" column, starts the 15-minute Square check, and runs it now.
+// Run once: adds the "Booked online" column, starts the 5-minute Square check, and runs it now.
 function setupBookingCheck() {
   setup();
   ScriptApp.getProjectTriggers()
     .filter(t => t.getHandlerFunction() === "syncBookings")
     .forEach(t => ScriptApp.deleteTrigger(t));
-  ScriptApp.newTrigger("syncBookings").timeBased().everyMinutes(15).create();
+  ScriptApp.newTrigger("syncBookings").timeBased().everyMinutes(5).create();
   syncBookings();
 }
 
