@@ -72,6 +72,27 @@ function doPost(e) {
   return out("ok");
 }
 
+// One-time cleanup: merge rows that share a phone number. Keeps the oldest row,
+// checks "Texted" if any copy was checked, and combines their notes.
+function removeDuplicates() {
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  const last = sh.getLastRow();
+  if (last < 3) return;
+  const rows = sh.getRange(2, 1, last - 1, 6).getDisplayValues();
+  const keep = {}, drop = [];
+  for (let i = rows.length - 1; i >= 0; i--) { // bottom = oldest
+    const phone = rows[i][2];
+    if (!phone) continue;
+    if (!(phone in keep)) { keep[phone] = i; continue; }
+    const k = keep[phone];
+    if (rows[i][4] === "TRUE") sh.getRange(k + 2, 5).setValue(true);
+    const note = rows[i][5], cur = sh.getRange(k + 2, 6).getDisplayValue();
+    if (note && cur.indexOf(note) === -1) sh.getRange(k + 2, 6).setValue(cur ? cur + "; " + note : note);
+    drop.push(i + 2);
+  }
+  drop.sort((a, b) => b - a).forEach(r => sh.deleteRow(r));
+}
+
 // Stop names like "=IMPORTXML(...)" from running as formulas
 function clean(v) {
   const s = String(v || "").trim();
