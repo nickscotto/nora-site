@@ -3,7 +3,8 @@
  * The site POSTs each claim here (see the claim form handler in index.html);
  * this adds it as a new row at the top with an unchecked "Texted" box.
  * A phone number already in the sheet is not added twice; H1 shows the count of distinct people.
- * Every 5 minutes syncBookings() fills "Booked online" from Square for people who booked themselves
+ * Every 5 minutes syncBookings() fills "Booked online" from Square for people who booked themselves,
+ * and adds a row for anyone who booked online without filling out the form
  * (needs Script Property SQUARE_TOKEN; run setupBookingCheck() once to start it).
  *
  * Setup: Extensions > Apps Script, paste this file, run setup() once,
@@ -46,13 +47,12 @@ function doPost(e) {
     const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
     // Count of distinct people (by phone), kept in H1 so new rows never move it
     if (!sh.getRange("H1").getFormula()) sh.getRange("H1").setFormula('="People: "&(COUNTUNIQUE(C:C)-1)').setFontWeight("bold");
-    const pretty = "(" + phone.slice(0, 3) + ") " + phone.slice(3, 6) + "-" + phone.slice(6);
     // Same phone already listed: add the note to that row instead of a duplicate
     const last = sh.getLastRow();
     if (last > 1) {
       const phones = sh.getRange(2, 3, last - 1, 1).getDisplayValues();
       for (let i = 0; i < phones.length; i++) {
-        if (phones[i][0] === pretty) {
+        if (phones[i][0] === pretty(phone)) {
           if (note) {
             const c = sh.getRange(i + 2, 6), cur = c.getDisplayValue();
             if (cur.indexOf(note) === -1) c.setValue(cur ? cur + "; " + note : note);
@@ -61,19 +61,27 @@ function doPost(e) {
         }
       }
     }
-    sh.insertRowAfter(1);
-    sh.getRange(2, 1, 1, 6).setValues([[
-      isNaN(when) ? new Date() : when, name, pretty,
-      '=HYPERLINK("sms:+1' + phone + '","Text")', false, note
-    ]]);
-    // The new row copies the header's style; reset it across every column, including "Booked online"
-    sh.getRange(2, 1, 1, HEADERS.length).setFontWeight("normal").setBackground(null).setFontColor(null);
-    sh.getRange(2, 1).setNumberFormat("ddd m/d h:mm am/pm");
-    sh.getRange(2, 5).insertCheckboxes();
+    addRow(sh, isNaN(when) ? new Date() : when, name, phone, note);
   } finally {
     lock.releaseLock();
   }
   return out("ok");
+}
+
+// Adds a person as row 2 (newest at the top) with an unchecked "Texted" box
+function addRow(sh, when, name, phone, note) {
+  sh.insertRowAfter(1);
+  sh.getRange(2, 1, 1, 6).setValues([[
+    when, name, pretty(phone), '=HYPERLINK("sms:+1' + phone + '","Text")', false, note
+  ]]);
+  // The new row copies the header's style; reset it across every column, including "Booked online"
+  sh.getRange(2, 1, 1, HEADERS.length).setFontWeight("normal").setBackground(null).setFontColor(null);
+  sh.getRange(2, 1).setNumberFormat("ddd m/d h:mm am/pm");
+  sh.getRange(2, 5).insertCheckboxes();
+}
+
+function pretty(phone) {
+  return "(" + phone.slice(0, 3) + ") " + phone.slice(3, 6) + "-" + phone.slice(6);
 }
 
 // One-time cleanup: merge rows that share a phone number. Keeps the oldest row,
@@ -108,7 +116,8 @@ function setupBookingCheck() {
 }
 
 // Marks each person who booked herself in Square (online booking site, Google, Instagram)
-// with her upcoming or past appointment times. Appointments Nora enters are left out.
+// with her upcoming or past appointment times, adding anyone not yet in the sheet.
+// Appointments Nora enters are left out.
 function syncBookings() {
   const token = PropertiesService.getScriptProperties().getProperty("SQUARE_TOKEN");
   if (!token) throw new Error("Add the Square token as Script Property SQUARE_TOKEN (Project Settings > Script Properties).");
@@ -136,31 +145,50 @@ function syncBookings() {
     (b.source === "FIRST_PARTY_BUYER" || b.source === "THIRD_PARTY_BUYER") &&
     (b.status === "ACCEPTED" || b.status === "PENDING") && b.customer_id);
 
-  // Customer phone numbers, 100 at a time
-  const phoneOf = {};
+  // Service names, to tell Nora what someone without a claim form booked
+  const serviceOf = {};
+  let cur = "";
+  do {
+    const d = api("catalog/list?types=ITEM" + (cur ? "&cursor=" + encodeURIComponent(cur) : ""));
+    (d.objects || []).forEach(o => (o.item_data.variations || []).forEach(v => serviceOf[v.id] = o.item_data.name));
+    cur = d.cursor || "";
+  } while (cur);
+
+  // Customer names and phone numbers, 100 at a time
+  const phoneOf = {}, nameOf = {};
   const ids = [...new Set(self.map(b => b.customer_id))];
   for (let i = 0; i < ids.length; i += 100) {
     const d = api("customers/bulk-retrieve", { method: "post", payload: JSON.stringify({ customer_ids: ids.slice(i, i + 100) }) });
     Object.keys(d.responses || {}).forEach(id => {
       const c = (d.responses[id] || {}).customer;
       if (c && c.phone_number) phoneOf[id] = c.phone_number.replace(/\D/g, "").slice(-10);
+      if (c) nameOf[id] = clean(((c.given_name || "") + " " + (c.family_name || "").slice(0, 1)).trim()).slice(0, 40);
     });
   }
-  const byPhone = {};
+  const byPhone = {}, firstBooking = {};
   self.sort((a, b) => a.start_at < b.start_at ? -1 : 1).forEach(b => {
     const ph = phoneOf[b.customer_id];
-    if (!ph) return;
+    if (!ph || ph.length !== 10) return;
     const t = Utilities.formatDate(new Date(b.start_at), "America/New_York", "EEE M/d h:mm a");
     (byPhone[ph] = byPhone[ph] || []).push(t);
+    if (!firstBooking[ph] || b.created_at < firstBooking[ph].created_at) firstBooking[ph] = b;
   });
 
   const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
   if (sh.getRange(1, 7).getValue() !== "Booked online") setup();
-  const last = sh.getLastRow();
-  if (last < 2) return;
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
+    // Add people who booked online but never filled out the form, oldest first so the newest ends up on top
+    const listed = new Set(sh.getLastRow() > 1 ? sh.getRange(2, 3, sh.getLastRow() - 1, 1).getDisplayValues().map(r => r[0].replace(/\D/g, "")) : []);
+    Object.keys(firstBooking).filter(ph => !listed.has(ph))
+      .sort((a, b) => firstBooking[a].created_at < firstBooking[b].created_at ? -1 : 1)
+      .forEach(ph => {
+        const b = firstBooking[ph];
+        const what = (b.appointment_segments || []).map(s => serviceOf[s.service_variation_id] || "a service").join(" + ");
+        addRow(sh, new Date(b.created_at), nameOf[b.customer_id] || "(no name)", ph, "No claim form; booked " + what + " online in Square");
+      });
+    if (sh.getLastRow() < 2) return;
     const n = sh.getLastRow() - 1; // re-read under the lock in case a claim just came in
     const phones = sh.getRange(2, 3, n, 1).getDisplayValues();
     const vals = phones.map(r => {
