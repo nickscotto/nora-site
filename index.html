@@ -407,6 +407,24 @@
     opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; max-width: calc(100% - 32px); z-index: 40;
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Floating section menu: appears once the hero has scrolled away */
+  .jump { position: fixed; right: 16px; bottom: calc(92px + env(safe-area-inset-bottom, 0px)); z-index: 35;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+    opacity: 0; visibility: hidden; transform: translateY(8px); transition: opacity .2s, transform .2s, visibility .2s; }
+  .jump.show { opacity: 1; visibility: visible; transform: none; }
+  @media (min-width: 761px) { .jump { right: 24px; bottom: 24px; } }
+  .jump-toggle { display: inline-flex; align-items: center; gap: 8px; font: 600 0.88rem var(--sans); color: var(--ink);
+    background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 11px 16px 11px 14px; cursor: pointer;
+    box-shadow: 0 6px 20px -8px rgba(43, 29, 23, 0.35); }
+  .jump-toggle:hover { border-color: var(--honey); }
+  .jump-toggle svg { width: 16px; height: 16px; }
+  .jump-list { list-style: none; margin: 0; padding: 6px; min-width: 190px; background: var(--card); border: 1px solid var(--line);
+    border-radius: 14px; box-shadow: 0 14px 34px -14px rgba(43, 29, 23, 0.45); }
+  .jump-list a { display: block; padding: 11px 14px; border-radius: 9px; text-decoration: none; color: var(--ink-soft); font-size: 0.95rem; }
+  .jump-list a:hover { color: var(--ink); background: color-mix(in srgb, var(--champagne) 30%, transparent); }
+  .jump-list a[aria-current="true"] { color: var(--ink); font-weight: 600; box-shadow: inset 2px 0 0 var(--honey); }
+  @media (prefers-reduced-motion: reduce) { .jump { transition: none; } }
 </style>
 <!-- Meta Pixel Code -->
 <script>
@@ -816,6 +834,20 @@ src="https://www.facebook.com/tr?id=2106667673542937&ev=PageView&noscript=1"
 
 <div class="toast" id="toast" role="status"></div>
 
+<nav class="jump" id="jump" aria-label="Sections">
+  <ul class="jump-list" id="jumpList" hidden>
+    <li><a href="#work">Her work</a></li>
+    <li><a href="#package">The visit</a></li>
+    <li><a href="#services">Prices</a></li>
+    <li><a href="#about">Meet Nora</a></li>
+    <li><a href="#faq">Good to know</a></li>
+    <li><a href="#visit">Find her</a></li>
+  </ul>
+  <button class="jump-toggle" type="button" aria-expanded="false" aria-controls="jumpList">
+    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg>Sections
+  </button>
+</nav>
+
 <script>
 /* ============================================================
    SETTINGS: fill these in (or send them to Claude to fill in)
@@ -1160,6 +1192,34 @@ function renderResult() {
   quizEl.querySelector(".quiz-back").addEventListener("click", () => { answers = []; renderQuestion(0); });
 }
 renderQuestion(0);
+
+/* Floating section menu */
+(() => {
+  const jump = document.getElementById("jump"), list = document.getElementById("jumpList"), btn = jump.querySelector(".jump-toggle");
+  const links = [...list.querySelectorAll("a")];
+  const setOpen = open => { list.hidden = !open; btn.setAttribute("aria-expanded", open); };
+  btn.addEventListener("click", () => {
+    const open = list.hidden;
+    setOpen(open);
+    if (open && window.clarity) clarity("event", "opened_sections");
+  });
+  links.forEach(a => a.addEventListener("click", () => setOpen(false)));
+  document.addEventListener("click", e => { if (!jump.contains(e.target)) setOpen(false); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !list.hidden) { setOpen(false); btn.focus(); } });
+  // Show the button only after the claim card is out of view
+  new IntersectionObserver(([e]) => {
+    jump.classList.toggle("show", !e.isIntersecting);
+    if (e.isIntersecting) setOpen(false);
+  }).observe(document.getElementById("claim"));
+  // Mark the section being read
+  const seen = new Map();
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => seen.set(e.target.id, e.isIntersecting));
+    const cur = links.map(a => a.hash.slice(1)).filter(id => seen.get(id)).shift();
+    links.forEach(a => a.setAttribute("aria-current", a.hash.slice(1) === cur));
+  }, { rootMargin: "-40% 0px -55% 0px" });
+  links.forEach(a => { const el = document.querySelector(a.hash); if (el) io.observe(el); });
+})();
 </script>
 </body>
 </html>
