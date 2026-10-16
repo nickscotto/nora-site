@@ -18,7 +18,10 @@ Edit `index.html`, commit, `git push`. GitHub Actions (`.github/workflows/deploy
 - Before/after photos are real work; never AI-generated results.
 - Ad text and the top of the page must use the same offer wording.
 
-## Current offer (through Oct 31, 2026)
+## Offer status
+The $100 offer was ended early on Oct 16, 2026 (Nick's call) by setting `launchPromo.endsOn` to 2026-10-15; every Book button now opens the full Square menu, and the offer FAQ items were removed. Meta ads paused the same day. Notes on the old offer, kept for reference:
+
+## Former offer (ended Oct 16, 2026)
 All-over or root color + haircut for $100 (normally $200 = $145 color + $55 cut), first 20 new clients. The $100 can go toward highlights ($155+), balayage ($190+) or gray blending ($175+); client pays the difference, cut included. Elements with `.promo-only` / `.regular-only` swap automatically when the promo ends (date passes or 20 claimed). The countdown shows only at 5+ claimed (`showCountAt`).
 
 ## Design notes
