@@ -545,57 +545,6 @@ src="https://www.facebook.com/tr?id=2106667673542937&ev=PageView&noscript=1"
     </div>
   </section>
 
-  <!-- OFFER -->
-  <section class="block" id="package">
-    <div class="container">
-      <div class="section-head">
-        <h2>The Whole New You Color Visit</h2>
-        <p>Your first visit with Nora: a consultation, your color and a haircut, in one appointment.</p>
-      </div>
-      <p id="deadlineBonus" class="banner" hidden></p>
-      <p id="launchPromo" class="banner" hidden>Launch special: all-over color and a haircut for $100, for the first 20 new clients.</p>
-      <div class="offer">
-        <div class="offer-body">
-          <h3>What's included</h3>
-          <p class="promo-only">$100 covers all-over or root color plus the haircut. Want highlights, balayage or gray blending? Your $100 goes toward them and you pay the difference, haircut still included.</p>
-          <p class="regular-only" hidden>Full color from $145, highlights from $155, balayage from $190. Exact price confirmed at your consultation.</p>
-          <ul class="includes">
-            <li><span class="dot"></span><div><strong>Real consultation</strong><span class="desc">Your hair history, your goals, and your photos. Together you decide the direction: highlights, all-over color, gray blending, or a correction.</span></div></li>
-            <li><span class="dot"></span><div><strong>Your color, done that day</strong><span class="desc promo-only">All-over or root color is covered by the $100. For more dimension, put it toward highlights (from $55 more), balayage (from $90 more) or gray blending (from $75 more). Nora confirms your price before anything starts.</span><span class="desc regular-only" hidden>Priced at Nora's normal rate for the service you choose, confirmed before anything starts.</span></div></li>
-            <li class="promo-only"><span class="dot"></span><div><strong>A haircut to finish it</strong><span class="desc">Shaped to go with your new color, included in the $100.</span></div></li>
-            <li><span class="dot"></span><div><strong>Finished blowout</strong><span class="desc">You leave ready for photos, dinner, or whatever's next.</span></div></li>
-            <li><span class="dot"></span><div><strong>Florida Color Care Plan, on request</strong><span class="desc">Ask and Nora will put together a written plan for keeping your color right through sun, salt, pool and hard water.</span></div></li>
-            <li><span class="dot"></span><div><strong>Your before &amp; after, yours to keep</strong><span class="desc">A real photo of your transformation, texted to you after your visit. Share it or keep it private, your call.</span></div></li>
-          </ul>
-        </div>
-        <div class="offer-price">
-          <div>
-            <div class="promo-only">
-              <div class="price-now">$100</div>
-              <div class="price-label">All-over color and a haircut. Normally $200 ($145 color + $55 cut). For the first 20 new clients through Oct 31.</div>
-              <div class="price-label" style="margin-top:10px">Highlights from $155: $55 more<br>Balayage from $190: $90 more</div>
-            </div>
-            <div class="regular-only" hidden>
-              <div class="price-now" style="font-size:2.2rem">Full color from $145</div>
-              <div class="price-label">Highlights from $155 &middot; Balayage from $190 &middot; Gray blending from $175. Your exact price depends on your hair and is confirmed with you before anything starts.</div>
-            </div>
-          </div>
-          <div>
-            <a class="btn btn-light js-claim-link promo-only" href="#claim" style="width:100%">Claim my $100 spot</a>
-            <a class="btn btn-light js-book regular-only" href="#" style="width:100%" hidden>Book your color visit</a>
-            <p class="promo-only" style="margin:12px 0 0;font-size:0.9rem"><a class="js-book" href="#" style="color:inherit;text-decoration:underline">Or pick a time online now</a></p>
-            <div class="price-meta" style="margin-top:22px">
-              <p id="lengthLine" hidden></p>
-              <p>Booking online? Your card only holds the spot. You're charged at your visit, or only if you miss it without notice.</p>
-              <p id="launchPromoSmall" hidden>$100 color and cut for the first 20 new clients.</p>
-              <p>If the color isn't what you discussed at your consult, Nora will fix it that same day.</p>
-              <p><a class="js-text" href="#" style="color:inherit;text-decoration:underline">Prefer to text? Message Nora at 443-521-0660</a></p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
 
   <!-- REVIEWS (hidden until real reviews are added) -->
   <section class="block quiz-section" id="reviews" hidden>
@@ -607,7 +556,7 @@ src="https://www.facebook.com/tr?id=2106667673542937&ev=PageView&noscript=1"
   </section>
 
   <!-- PROCESS -->
-  <section class="block" style="padding-top:0">
+  <section class="block" id="how">
     <div class="container">
       <div class="vsl" id="vsl" hidden>
         <video id="vslVideo" controls playsinline preload="metadata"></video>
@@ -829,7 +778,7 @@ src="https://www.facebook.com/tr?id=2106667673542937&ev=PageView&noscript=1"
 <nav class="jump" id="jump" aria-label="Sections">
   <ul class="jump-list" id="jumpList" hidden>
     <li><a href="#work">Her work</a></li>
-    <li><a href="#package">The visit</a></li>
+    <li><a href="#how">The visit</a></li>
     <li><a href="#services">Prices</a></li>
     <li><a href="#about">Meet Nora</a></li>
     <li><a href="#faq">Good to know</a></li>
@@ -917,8 +866,8 @@ document.querySelectorAll(".js-book-any").forEach(el => {
 });
 if (SETTINGS.sessionLength) {
   const l = document.getElementById("lengthLine");
-  l.textContent = "Plan on " + SETTINGS.sessionLength + " in the chair.";
-  l.hidden = false;
+  if (l) l.textContent = "Plan on " + SETTINGS.sessionLength + " in the chair.";
+  if (l) l.hidden = false;
 }
 function renderLaunchPromo(claimed) {
   const p = SETTINGS.launchPromo;
@@ -926,24 +875,25 @@ function renderLaunchPromo(claimed) {
   const left = Math.max(n - claimed, 0);
   const end = p.endsOn ? new Date(p.endsOn + "T23:59:59") : null;
   const ids = ["launchPromo", "launchPromoSmall", "heroLaunchPromo"];
+  const $ = id => document.getElementById(id) || {}; // the offer section was removed Oct 16
   const promoOn = !(left === 0 || (end && new Date() > end));
   document.querySelectorAll(".promo-only").forEach(el => { el.hidden = !promoOn; });
   document.querySelectorAll(".regular-only").forEach(el => { el.hidden = promoOn; });
   if (!promoOn) {
-    ids.forEach(id => { document.getElementById(id).hidden = true; });
-    document.getElementById("mobileBarText").innerHTML = "<strong>Whole New You Color Visit</strong>Book your first color with Nora";
+    ids.forEach(id => { $(id).hidden = true; });
+    $("mobileBarText").innerHTML = "<strong>Whole New You Color Visit</strong>Book your first color with Nora";
     return;
   }
   const by = end ? ` through ${end.toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : "";
   // Show the countdown only once enough spots are claimed for it to read as demand.
   const count = claimed >= (p.showCountAt || 0) ? ` ${left} of ${n} spots left.` : "";
-  document.getElementById("launchPromo").textContent = `Just opened in Melbourne. All-over color and a haircut for $100, for the first ${n} new clients${by}.${count}`;
-  document.getElementById("launchPromoSmall").textContent = `$100 color and cut for the first ${n} new clients${by}.${count}`;
-  document.getElementById("mobileBarText").innerHTML = `<strong>$100 color + cut</strong>${count ? left + " of " + n + " left" : "Through" + by.replace(" through", "")}`;
-  document.getElementById("heroLaunchPromo").textContent = count.trim();
-  document.getElementById("launchPromo").hidden = false;
-  document.getElementById("launchPromoSmall").hidden = !count;
-  document.getElementById("heroLaunchPromo").hidden = !count;
+  $("launchPromo").textContent = `Just opened in Melbourne. All-over color and a haircut for $100, for the first ${n} new clients${by}.${count}`;
+  $("launchPromoSmall").textContent = `$100 color and cut for the first ${n} new clients${by}.${count}`;
+  $("mobileBarText").innerHTML = `<strong>$100 color + cut</strong>${count ? left + " of " + n + " left" : "Through" + by.replace(" through", "")}`;
+  $("heroLaunchPromo").textContent = count.trim();
+  $("launchPromo").hidden = false;
+  $("launchPromoSmall").hidden = !count;
+  $("heroLaunchPromo").hidden = !count;
 }
 if (SETTINGS.launchPromo && SETTINGS.launchPromo.active) {
   renderLaunchPromo(SETTINGS.launchPromo.claimed || 0);
