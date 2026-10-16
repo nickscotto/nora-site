@@ -13,7 +13,7 @@ Edit `index.html`, commit, `git push`. GitHub Actions (`.github/workflows/deploy
 ## Copy rules
 - No fake contrasts ("chosen with you, not assumed", "nothing is decided until..."). Every colorist consults first.
 - No invented scarcity, stats, values or guarantees. Only true limits: first 20 new clients, through Oct 31, 2026. No weekly cap.
-- Guarantee (Nora's words): "If the color isn't what you discussed at your consult, Nora will fix it that same day."
+- Guarantee (Nora's words): "If the color isn't what you discussed at your consult, Nora will fix it that same day." Removed from the visible site Oct 16, 2026 at Nick's request (only left in the hidden promo claim card).
 - Reviews are real and from Maryland (Europa Salon, Nourish & Style). Never present them as Florida reviews.
 - Before/after photos are real work; never AI-generated results.
 - Ad text and the top of the page must use the same offer wording.
