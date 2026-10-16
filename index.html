@@ -473,7 +473,7 @@ src="https://www.facebook.com/tr?id=2106667673542937&ev=PageView&noscript=1"
 </head>
 <body>
 
-<a class="skip-link" href="#claim">Skip to the offer</a>
+<a class="skip-link" href="#claim">Skip to content</a>
 <header class="site-header">
   <div class="container header-inner">
     <a href="#top" class="wordmark">Nora Scotto</a>
@@ -919,7 +919,7 @@ if (SETTINGS.videoUrl) {
   document.getElementById("vsl").hidden = false;
 }
 if (SETTINGS.textNumber) {
-  const smsHref = "sms:+1" + SETTINGS.textNumber + "?&body=" + encodeURIComponent("Hi Nora! I'd like to claim the $100 color + haircut.");
+  const smsHref = "sms:+1" + SETTINGS.textNumber + "?&body=" + encodeURIComponent("Hi Nora! I'd like to book a color appointment.");
   document.querySelectorAll(".js-text").forEach(t => { t.href = smsHref; t.hidden = false; });
   document.addEventListener("click", e => {
     if (e.target.closest(".js-text") && window.fbq) fbq("track", "Contact", { content_name: "Text Nora" });
