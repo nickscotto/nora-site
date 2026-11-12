@@ -946,15 +946,20 @@ if (SETTINGS.textNumber) {
     if (phone.length !== 10) { msg.textContent = "Enter a 10-digit mobile number."; return; }
     const btn = f.querySelector("button"); btn.disabled = true; msg.textContent = "Claiming your spot...";
     const pretty = `(${phone.slice(0, 3)}) ${phone.slice(3, 6)}-${phone.slice(6)}`;
+    // Meta click/browser IDs and a shared event_id, so the sheet can send the same Lead server-side and later Purchases match this person
+    const cookie = k => (document.cookie.match("(?:^|; )" + k + "=([^;]*)") || [])[1] || "";
+    const fbclid = new URLSearchParams(location.search).get("fbclid");
+    const fbc = cookie("_fbc") || (fbclid ? `fb.1.${Date.now()}.${fbclid}` : "");
+    const eventId = "lead_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
     try {
-      if (SETTINGS.claimsSheetUrl) fetch(SETTINGS.claimsSheetUrl, { method: "POST", mode: "no-cors", keepalive: true, headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ first_name: name, phone, _honey: f.company.value }) }).catch(() => {});
+      if (SETTINGS.claimsSheetUrl) fetch(SETTINGS.claimsSheetUrl, { method: "POST", mode: "no-cors", keepalive: true, headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ first_name: name, phone, _honey: f.company.value, event_id: eventId, fbc, fbp: cookie("_fbp"), ua: navigator.userAgent }) }).catch(() => {});
       const res = await fetch("https://formsubmit.co/ajax/nick@claritypoint.io", {
         method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({ _subject: "New $100 claim: " + name + " " + pretty, _template: "table", _captcha: "false", _honey: f.company.value, first_name: name, phone: pretty, offer: "$100 all-over color + haircut", text_them: "sms:+1" + phone })
       });
       const out = await res.json().catch(() => ({}));
       if (!res.ok || String(out.success) !== "true") throw new Error(res.status);
-      if (window.fbq) fbq("track", "Lead", { content_name: "$100 color + haircut claim" });
+      if (window.fbq) fbq("track", "Lead", { content_name: "$100 color + haircut claim" }, { eventID: eventId });
       if (window.clarity) clarity("event", "claimed_100");
       const safe = name.replace(/[<>&"]/g, "");
       f.innerHTML = `<div class="claim-done"><h2>You're in, ${safe}.</h2><p>Nora will text you at ${pretty} to pick a time. Want to lock it in right now?</p><a class="btn btn-primary" id="claimBook" href="#">Pick my time</a><p class="claim-legal">Her texts come from 443-521-0660.</p></div>`;

@@ -66,6 +66,8 @@ function doPost(e) {
   } finally {
     lock.releaseLock();
   }
+  saveMetaIds(phone, d);
+  try { sendLead(phone, name, d); } catch (err) { console.error("CAPI Lead: " + err.message); }
   return out("ok");
 }
 
@@ -202,6 +204,151 @@ function syncBookings() {
   } finally {
     lock.releaseLock();
   }
+}
+
+/* ===================== Meta Conversions API =====================
+ * Tells Meta which leads turned into paying clients, so ads optimize for buyers, not form fills.
+ *   Lead      sent the moment someone claims (same event_id as the browser pixel, so Meta counts it once)
+ *   Schedule  a Square booking for someone in the sheet
+ *   Purchase  a completed Square payment for someone in the sheet, with the real amount (refunds subtracted)
+ * Matching uses hashed phone, email and first name from Square, plus the Meta click/browser IDs
+ * the claim form saves (Script Properties, so no sheet columns are touched).
+ * Script Properties: META_TOKEN (required), META_TEST_CODE (optional: events show only under
+ * Events Manager > Test events and don't affect ads; delete it to go live).
+ * Run setupConversions() once: sends everything since the Oct 1 launch, then checks hourly.
+ * Each event is sent once; sent IDs are kept in Script Property CAPI_SENT.
+ */
+const PIXEL_ID = "2106667673542937";
+const CAPI_FROM = "2026-10-01T00:00:00Z";
+
+function setupConversions() {
+  ScriptApp.getProjectTriggers()
+    .filter(t => t.getHandlerFunction() === "sendConversions")
+    .forEach(t => ScriptApp.deleteTrigger(t));
+  ScriptApp.newTrigger("sendConversions").timeBased().everyHours(1).create();
+  sendConversions();
+}
+
+function sendConversions() {
+  const props = PropertiesService.getScriptProperties();
+  const sq = squareApi();
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  if (sh.getLastRow() < 2) return;
+  const inSheet = new Set(sh.getRange(2, 3, sh.getLastRow() - 1, 1).getDisplayValues().map(r => r[0].replace(/\D/g, "")).filter(p => p.length === 10));
+
+  const payments = [];
+  let cur = "";
+  do {
+    const d = sq("payments?location_id=LMF0NR8GP2YVJ&limit=100&begin_time=" + CAPI_FROM + (cur ? "&cursor=" + encodeURIComponent(cur) : ""));
+    (d.payments || []).filter(p => p.status === "COMPLETED" && p.customer_id).forEach(p => payments.push(p));
+    cur = d.cursor || "";
+  } while (cur);
+
+  const bookings = [];
+  for (let lo = Date.parse(CAPI_FROM), end = Date.now() + 120 * 864e5; lo < end; lo += 30 * 864e5) {
+    let c = "";
+    do {
+      const d = sq("bookings?location_id=LMF0NR8GP2YVJ&limit=100&start_at_min=" + new Date(lo).toISOString() +
+        "&start_at_max=" + new Date(lo + 30 * 864e5).toISOString() + (c ? "&cursor=" + encodeURIComponent(c) : ""));
+      (d.bookings || []).filter(b => b.customer_id && (b.status === "ACCEPTED" || b.status === "PENDING")).forEach(b => bookings.push(b));
+      c = d.cursor || "";
+    } while (c);
+  }
+
+  const customers = {};
+  const ids = [...new Set(payments.map(p => p.customer_id).concat(bookings.map(b => b.customer_id)))];
+  for (let i = 0; i < ids.length; i += 100) {
+    const d = sq("customers/bulk-retrieve", { method: "post", payload: JSON.stringify({ customer_ids: ids.slice(i, i + 100) }) });
+    Object.keys(d.responses || {}).forEach(id => { const c = (d.responses[id] || {}).customer; if (c) customers[id] = c; });
+  }
+  const phoneOf = id => ((customers[id] || {}).phone_number || "").replace(/\D/g, "").slice(-10);
+
+  const sent = new Set(JSON.parse(props.getProperty("CAPI_SENT") || "[]"));
+  const events = [];
+  payments.forEach(p => {
+    const ph = phoneOf(p.customer_id), id = "sq_pay_" + p.id;
+    if (!inSheet.has(ph) || sent.has(id)) return;
+    const cents = p.amount_money.amount - ((p.refunded_money || {}).amount || 0);
+    if (cents <= 0) return;
+    events.push(capiEvent("Purchase", id, p.created_at, ph, customers[p.customer_id], { currency: "USD", value: cents / 100 }));
+  });
+  bookings.forEach(b => {
+    const ph = phoneOf(b.customer_id), id = "sq_book_" + b.id;
+    if (!inSheet.has(ph) || sent.has(id)) return;
+    events.push(capiEvent("Schedule", id, b.created_at, ph, customers[b.customer_id], {}));
+  });
+  // Meta rejects events older than 62 days (offline); drop those instead of failing the batch
+  const oldest = Date.now() - 61 * 864e5;
+  const fresh = events.filter(e => e.event_time * 1000 > oldest);
+  for (let i = 0; i < fresh.length; i += 500) {
+    const batch = fresh.slice(i, i + 500);
+    postCapi(batch);
+    if (!props.getProperty("META_TEST_CODE")) batch.forEach(e => sent.add(e.event_id)); // test events don't count, so they must be sent again live
+  }
+  props.setProperty("CAPI_SENT", JSON.stringify([...sent].slice(-300)));
+  console.log("CAPI sent " + fresh.length + " events");
+}
+
+function capiEvent(name, eventId, isoTime, phone, customer, custom) {
+  const c = customer || {};
+  const meta = JSON.parse(PropertiesService.getScriptProperties().getProperty("meta:" + phone) || "{}");
+  const ud = { ph: [sha("1" + phone)], country: [sha("us")] };
+  if (c.email_address) ud.em = [sha(c.email_address.trim().toLowerCase())];
+  if (c.given_name) ud.fn = [sha(c.given_name.trim().toLowerCase())];
+  if (c.family_name) ud.ln = [sha(c.family_name.trim().toLowerCase())];
+  if (meta.fbc) ud.fbc = meta.fbc;
+  if (meta.fbp) ud.fbp = meta.fbp;
+  return { event_name: name, event_time: Math.floor(Date.parse(isoTime) / 1000), event_id: eventId,
+    action_source: "physical_store", user_data: ud, custom_data: custom };
+}
+
+// Server copy of the browser Lead; same event_id, so Meta keeps one
+function sendLead(phone, name, d) {
+  if (!d.event_id) return;
+  const ud = { ph: [sha("1" + phone)], fn: [sha(String(name).replace(/^'/, "").trim().toLowerCase())], country: [sha("us")] };
+  if (d.fbc) ud.fbc = String(d.fbc).slice(0, 300);
+  if (d.fbp) ud.fbp = String(d.fbp).slice(0, 100);
+  if (d.ua) ud.client_user_agent = String(d.ua).slice(0, 400);
+  postCapi([{ event_name: "Lead", event_time: Math.floor(Date.now() / 1000), event_id: String(d.event_id).slice(0, 60),
+    action_source: "website", event_source_url: "https://norascotto.com/", user_data: ud }]);
+}
+
+// Keeps the Meta click (fbc) and browser (fbp) IDs from the claim form, matched to the phone, for later Purchase events
+function saveMetaIds(phone, d) {
+  if (!d.fbc && !d.fbp) return;
+  const props = PropertiesService.getScriptProperties();
+  const old = JSON.parse(props.getProperty("meta:" + phone) || "{}");
+  props.setProperty("meta:" + phone, JSON.stringify({
+    fbc: d.fbc ? String(d.fbc).slice(0, 300) : old.fbc, fbp: d.fbp ? String(d.fbp).slice(0, 100) : old.fbp }));
+}
+
+function postCapi(events) {
+  const props = PropertiesService.getScriptProperties();
+  const token = props.getProperty("META_TOKEN");
+  if (!token) throw new Error("Add the Meta token as Script Property META_TOKEN.");
+  const body = { data: events, access_token: token.trim() };
+  const test = props.getProperty("META_TEST_CODE");
+  if (test) body.test_event_code = test.trim();
+  const r = UrlFetchApp.fetch("https://graph.facebook.com/v21.0/" + PIXEL_ID + "/events",
+    { method: "post", contentType: "application/json", payload: JSON.stringify(body), muteHttpExceptions: true });
+  if (r.getResponseCode() !== 200) throw new Error("Meta " + r.getResponseCode() + ": " + r.getContentText().slice(0, 300));
+  return JSON.parse(r.getContentText());
+}
+
+function squareApi() {
+  const token = PropertiesService.getScriptProperties().getProperty("SQUARE_TOKEN");
+  if (!token) throw new Error("Add the Square token as Script Property SQUARE_TOKEN.");
+  const headers = { Authorization: "Bearer " + token.trim(), "Square-Version": "2025-01-23", "Content-Type": "application/json" };
+  return (path, opts) => {
+    const r = UrlFetchApp.fetch("https://connect.squareup.com/v2/" + path, Object.assign({ headers: headers, muteHttpExceptions: true }, opts || {}));
+    if (r.getResponseCode() !== 200) throw new Error("Square " + r.getResponseCode() + ": " + r.getContentText().slice(0, 200));
+    return JSON.parse(r.getContentText());
+  };
+}
+
+function sha(s) {
+  return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, s, Utilities.Charset.UTF_8)
+    .map(b => ("0" + (b & 255).toString(16)).slice(-2)).join("");
 }
 
 // Stop names like "=IMPORTXML(...)" from running as formulas
